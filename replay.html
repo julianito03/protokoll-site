@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PROTOKOLL — Flight Replay</title>
+<title>PROTOKOLL: Flight Replay</title>
 <style>
   :root {
     --ground: #0b0e12;
@@ -56,7 +56,7 @@
 
   .tape, .rail { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
   .tape { position: relative; overflow: hidden; }
-  .tape::after { /* faint scan texture — static, no motion */
+  .tape::after { /* faint scan texture, static, no motion */
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px);
   }
@@ -145,13 +145,13 @@
 
 <div class="console" style="padding-bottom:0">
   <p style="font-family:var(--sans);font-size:12px;letter-spacing:.08em;margin:0 0 10px">
-    <a href="index.html" style="color:var(--dim);text-decoration:none">&larr; protokoll — back to overview</a></p>
+    <a href="index.html" style="color:var(--dim);text-decoration:none">&larr; protokoll · back to overview</a></p>
   <div style="border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:14px 18px;font-size:13px;line-height:1.7;color:var(--dim)">
     <b style="color:var(--ink)">What you're watching:</b> a real sealed recording of an AI support agent refunding order A-1001 (€249).
-    Press <b style="color:var(--ink)">Play</b> — each row is one action, and the green link means your own browser just re-checked
+    Press <b style="color:var(--ink)">Play</b>. Each row is one action, and the green link means your own browser just re-checked
     that entry's cryptographic seal. Amber is a recorded human approval. Then press the red
-    <b style="color:#ff9aa4">Tamper</b> button: it loads a forged copy where the refund was quietly changed to €24,900 —
-    watch the mathematics find the lie at the exact row. Nothing here is a mock-up; all verification runs live on your machine.
+    <b style="color:#ff9aa4">Tamper</b> button: it loads a forged copy where the refund was quietly changed to €24,900.
+    Watch the mathematics find the lie at the exact row. Nothing here is a mock-up; all verification runs live on your machine.
   </div>
 </div>
 <div class="console">
@@ -161,17 +161,17 @@
         <circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.6" fill="#14100c" stroke="none"></circle>
       </svg>
     </div>
-    <h1>PROTOKOLL · FLIGHT REPLAY<small>Tamper-evident record of one AI agent flight — verified live in your browser</small></h1>
+    <h1>PROTOKOLL · FLIGHT REPLAY<small>Tamper-evident record of one AI agent flight, verified live in your browser</small></h1>
     <div class="meta">
-      trace <b id="m-trace">—</b><br>
-      recorded <b id="m-date">—</b><br>
-      signing key <b id="m-key">—</b>
+      trace <b id="m-trace">…</b><br>
+      recorded <b id="m-date">…</b><br>
+      signing key <b id="m-key">…</b>
     </div>
   </header>
 
   <div class="frame">
     <section class="tape" id="tape">
-      <div class="tape-head"><span class="lamp" id="lamp"></span> event tape — scenario: support agent refunds order A-1001</div>
+      <div class="tape-head"><span class="lamp" id="lamp"></span> event tape · scenario: support agent refunds order A-1001</div>
       <ol class="events" id="events"></ol>
     </section>
 
@@ -185,7 +185,7 @@
         human oversight <b id="r-human">0</b><br>
         redacted fields <b id="r-red">0</b>
       </div>
-      <div class="verdict" id="verdict">AWAITING REPLAY<small>press play — your browser verifies each step</small></div>
+      <div class="verdict" id="verdict">AWAITING REPLAY<small>press play. your browser verifies each step</small></div>
     </aside>
   </div>
 
@@ -197,7 +197,7 @@
       <span class="label">evidence</span>
       <button class="tamper" id="btn-tamper" aria-pressed="false">Tamper: refund €249 → €24,900</button>
     </div>
-    <p class="hint">Every row is re-hashed with WebCrypto as it plays; the green link means the recomputed SHA-256 matches the chained record. Flip the tamper switch to load a forged copy of the same file — the mathematics finds the lie at the exact event. Amber marks a human approval recorded <em>inside</em> the evidence. <code>[REDACTED]</code> fields were removed before the trace ever touched disk.</p>
+    <p class="hint">Every row is re-hashed with WebCrypto as it plays; the green link means the recomputed SHA-256 matches the chained record. Flip the tamper switch to load a forged copy of the same file. The mathematics finds the lie at the exact event. Amber marks a human approval recorded <em>inside</em> the evidence. <code>[REDACTED]</code> fields were removed before the trace ever touched disk.</p>
   </div>
 
   <div class="drop" id="drop">or drop any ATF trace (.jsonl) here to replay your own recording</div>
@@ -363,7 +363,7 @@
     $('r-sig').textContent = sig.state;
     $('r-sig').className = sig.state === 'valid' ? 'ok' : (sig.state === 'INVALID' ? 'bad' : 'warn');
     if (broken) {
-      setVerdict('bad', 'DO NOT TRUST', 'record altered after the fact — first lie at seq ' + brokenAt);
+      setVerdict('bad', 'DO NOT TRUST', 'record altered after the fact: first lie at seq ' + brokenAt);
     } else {
       $('r-chain').textContent = 'intact'; $('r-chain').className = 'ok';
       setVerdict('ok', 'TRUSTWORTHY', 'all ' + verified + ' links verified · ' + (sig.state === 'valid' ? 'signature valid' : 'signature: ' + sig.state));
@@ -378,7 +378,7 @@
     $('r-chain').textContent = 'standby'; $('r-chain').className = '';
     $('r-sig').textContent = 'standby'; $('r-sig').className = '';
     $('r-verified').textContent = '0';
-    setVerdict('', 'AWAITING REPLAY', 'press play — your browser verifies each step');
+    setVerdict('', 'AWAITING REPLAY', 'press play. your browser verifies each step');
   }
 
   $('btn-play').addEventListener('click', () => timer === null ? play() : pause());
@@ -400,7 +400,7 @@
     const text = await file.text();
     const parsed = text.split('\n').map((l) => l.trim()).filter(Boolean)
       .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-    if (!parsed.length || !parsed[0].hash) { drop.textContent = 'not a readable ATF trace — expected .jsonl with hashed events'; return; }
+    if (!parsed.length || !parsed[0].hash) { drop.textContent = 'not a readable ATF trace: expected .jsonl with hashed events'; return; }
     events = parsed; tampered = false; $('btn-tamper').setAttribute('aria-pressed', 'false');
     drop.textContent = 'replaying: ' + file.name;
     reset(); play();
