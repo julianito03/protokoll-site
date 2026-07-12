@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protokoll — Flight Replay</title>
+<style>
+  :root {
+    --ground: #0b0e12;
+    --panel: #131820;
+    --panel-2: #0f141b;
+    --line: #232c37;
+    --ink: #e8edf2;
+    --dim: #8a96a3;
+    --faint: #5a6572;
+    --orange: #ff6a2b;
+    --ok: #46d99a;
+    --warn: #ffb454;
+    --alarm: #ff4d5e;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif;
+  }
+  html { background: var(--ground); }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--sans);
+    background:
+      radial-gradient(1100px 500px at 50% -10%, #141b25 0%, transparent 60%),
+      var(--ground);
+    min-height: 100vh;
+  }
+  .console { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── placard ─────────────────────────────── */
+  .placard {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border: 1px solid var(--line); background: var(--panel);
+    border-radius: 6px; padding: 14px 18px;
+  }
+  .recorder-badge {
+    width: 46px; height: 46px; border-radius: 6px; flex: none;
+    background: linear-gradient(160deg, #ff7a3d, #e04f10);
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 2px 10px rgba(255,106,43,.25);
+  }
+  .recorder-badge svg { display: block; }
+  .placard h1 {
+    font-size: 17px; margin: 0; letter-spacing: .16em; font-weight: 700;
+  }
+  .placard h1 small { display: block; color: var(--dim); font-weight: 500; letter-spacing: .1em; font-size: 11px; margin-top: 3px; }
+  .meta { margin-left: auto; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.7; }
+  .meta b { color: var(--ink); font-weight: 500; }
+
+  /* ── frame ─────────────────────────────── */
+  .frame { display: grid; grid-template-columns: minmax(0, 1fr) 264px; gap: 14px; margin-top: 14px; }
+  @media (max-width: 840px) { .frame { grid-template-columns: 1fr; } }
+
+  .tape, .rail { border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+  .tape { position: relative; overflow: hidden; }
+  .tape::after { /* faint scan texture — static, no motion */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px);
+  }
+  .tape-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    font-size: 10px; letter-spacing: .22em; color: var(--dim); text-transform: uppercase;
+  }
+  .tape-head .lamp { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .tape.playing .lamp { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  .events { list-style: none; margin: 0; padding: 6px 0; max-height: 470px; overflow-y: auto; overflow-x: auto; }
+
+  .ev {
+    display: grid; grid-template-columns: 44px 58px 1fr 118px; gap: 10px; align-items: baseline;
+    padding: 7px 14px; font-family: var(--mono); font-size: 12px;
+    color: var(--faint); border-left: 2px solid transparent; min-width: 560px;
+    transition: color .25s, border-color .25s, background .25s;
+  }
+  .ev .seq { color: var(--faint); }
+  .ev .t { color: var(--faint); }
+  .ev .desc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev .link { text-align: right; font-size: 11px; white-space: nowrap; }
+  .ev.lit { color: var(--ink); background: rgba(255,255,255,.02); }
+  .ev.lit .desc .m { color: var(--ink); }
+  .ev.ok { border-left-color: var(--ok); }
+  .ev.ok .link { color: var(--ok); }
+  .ev.bad { border-left-color: var(--alarm); background: rgba(255,77,94,.07); }
+  .ev.bad .link { color: var(--alarm); font-weight: 700; }
+  .ev.orphan { border-left-color: #6b2a33; }
+  .ev.orphan .link { color: #b0616c; }
+  .ev.human { border-left-color: var(--warn); }
+  .ev.human .desc { color: var(--warn); }
+  .ev .tag {
+    font-size: 9px; letter-spacing: .14em; padding: 1px 6px; border-radius: 3px;
+    border: 1px solid currentColor; margin-left: 8px; vertical-align: 1px;
+  }
+
+  /* ── rail ─────────────────────────────── */
+  .rail { padding: 14px; display: flex; flex-direction: column; gap: 14px; align-self: start; }
+  .rail h2 { font-size: 10px; letter-spacing: .22em; color: var(--dim); margin: 0; text-transform: uppercase; }
+  .readout { font-family: var(--mono); font-size: 12px; line-height: 2; color: var(--dim); }
+  .readout b { color: var(--ink); font-weight: 500; float: right; }
+  .readout b.ok { color: var(--ok); } .readout b.bad { color: var(--alarm); } .readout b.warn { color: var(--warn); }
+  .verdict {
+    border: 2px solid var(--line); border-radius: 6px; padding: 14px; text-align: center;
+    font-weight: 800; letter-spacing: .18em; font-size: 14px; color: var(--faint);
+    text-transform: uppercase;
+  }
+  .verdict.ok { border-color: var(--ok); color: var(--ok); background: rgba(70,217,154,.06); }
+  .verdict.bad { border-color: var(--alarm); color: var(--alarm); background: rgba(255,77,94,.08); }
+  .verdict small { display: block; font-weight: 500; letter-spacing: .08em; font-size: 10px; margin-top: 6px; color: var(--dim); }
+
+  /* ── controls ─────────────────────────────── */
+  .controls {
+    margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 12px 14px;
+  }
+  button {
+    font: 700 11px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink); background: #1a212b; border: 1px solid #2c3642; border-radius: 4px;
+    padding: 10px 16px; cursor: pointer;
+  }
+  button:hover { border-color: #46536383; background: #202936; }
+  button:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+  button.primary { background: var(--orange); border-color: var(--orange); color: #14100c; }
+  button.primary:hover { background: #ff7c45; }
+  button:disabled { opacity: .45; cursor: default; }
+  .switch { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .switch .label { font-size: 10px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
+  button.tamper { border-color: #5a2730; color: #ff9aa4; background: #1d1215; }
+  button.tamper[aria-pressed="true"] { background: var(--alarm); border-color: var(--alarm); color: #170406; }
+  .hint { width: 100%; font-size: 11px; color: var(--faint); line-height: 1.6; }
+  .hint code { font-family: var(--mono); color: var(--dim); }
+
+  .drop { margin-top: 10px; text-align: center; font-size: 11px; color: var(--faint); letter-spacing: .06em;
+    border: 1px dashed var(--line); border-radius: 6px; padding: 10px; }
+  .drop.over { border-color: var(--orange); color: var(--orange); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .verdict.stamp { animation: stamp .35s cubic-bezier(.2,1.6,.4,1); }
+    @keyframes stamp { from { transform: scale(1.25); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+
+<div class="console" style="padding-bottom:0">
+  <p style="font-family:var(--sans);font-size:12px;letter-spacing:.08em;margin:0 0 10px">
+    <a href="index.html" style="color:var(--dim);text-decoration:none">&larr; protokoll — back to overview</a></p>
+  <div style="border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:14px 18px;font-size:13px;line-height:1.7;color:var(--dim)">
+    <b style="color:var(--ink)">What you're watching:</b> a real sealed recording of an AI support agent refunding order A-1001 (€249).
+    Press <b style="color:var(--ink)">Play</b> — each row is one action, and the green link means your own browser just re-checked
+    that entry's cryptographic seal. Amber is a recorded human approval. Then press the red
+    <b style="color:#ff9aa4">Tamper</b> button: it loads a forged copy where the refund was quietly changed to €24,900 —
+    watch the mathematics find the lie at the exact row. Nothing here is a mock-up; all verification runs live on your machine.
+  </div>
+</div>
+<div class="console">
+  <header class="placard">
+    <div class="recorder-badge" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#14100c" stroke-width="2">
+        <circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.6" fill="#14100c" stroke="none"></circle>
+      </svg>
+    </div>
+    <h1>PROTOKOLL · FLIGHT REPLAY<small>Tamper-evident record of one AI agent flight — verified live in your browser</small></h1>
+    <div class="meta">
+      trace <b id="m-trace">—</b><br>
+      recorded <b id="m-date">—</b><br>
+      signing key <b id="m-key">—</b>
+    </div>
+  </header>
+
+  <div class="frame">
+    <section class="tape" id="tape">
+      <div class="tape-head"><span class="lamp" id="lamp"></span> event tape — scenario: support agent refunds order A-1001</div>
+      <ol class="events" id="events"></ol>
+    </section>
+
+    <aside class="rail" aria-live="polite">
+      <h2>Verification</h2>
+      <div class="readout">
+        events <b id="r-count">0</b><br>
+        chain links verified <b id="r-verified">0</b><br>
+        chain integrity <b id="r-chain">standby</b><br>
+        signature (Ed25519) <b id="r-sig">standby</b><br>
+        human oversight <b id="r-human">0</b><br>
+        redacted fields <b id="r-red">0</b>
+      </div>
+      <div class="verdict" id="verdict">AWAITING REPLAY<small>press play — your browser verifies each step</small></div>
+    </aside>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="btn-play">Play</button>
+    <button id="btn-step">Step</button>
+    <button id="btn-reset">Reset</button>
+    <div class="switch">
+      <span class="label">evidence</span>
+      <button class="tamper" id="btn-tamper" aria-pressed="false">Tamper: refund €249 → €24,900</button>
+    </div>
+    <p class="hint">Every row is re-hashed with WebCrypto as it plays; the green link means the recomputed SHA-256 matches the chained record. Flip the tamper switch to load a forged copy of the same file — the mathematics finds the lie at the exact event. Amber marks a human approval recorded <em>inside</em> the evidence. <code>[REDACTED]</code> fields were removed before the trace ever touched disk.</p>
+  </div>
+
+  <div class="drop" id="drop">or drop any ATF trace (.jsonl) here to replay your own recording</div>
+</div>
+
+<script type="text/plain" id="trace-data">
+{"type":"header","spec":"atf/0.1","trace_id":"5d44f5dc-bdb4-46c3-ac94-82a0b7be8304","created_at":"2026-07-12T15:52:11.716Z","key_fingerprint":"14f304621bfca9df","redaction_rules":["email","iban"],"command":["/usr/local/bin/node","/Users/juliandegen/protokoll/demo/payments-server.mjs"],"seq":0,"ts":"2026-07-12T15:52:11.719Z","prev_hash":"GENESIS","hash":"0586ab8b2cfd13534e939ab7930ac11bdc9ba7ed7a29e22529afad98a5fb479c"}
+{"type":"request","direction":"client->server","method":"initialize","id":1,"payload":{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"demo-agent","version":"1.0.0"}}},"seq":1,"ts":"2026-07-12T15:52:11.723Z","prev_hash":"0586ab8b2cfd13534e939ab7930ac11bdc9ba7ed7a29e22529afad98a5fb479c","hash":"85d00bda7e2c5701143eb7a76d85e067ade49ccb9ddeb9861083ae1e41bf3e96"}
+{"type":"response","direction":"server->client","id":1,"payload":{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"demo-payments","version":"1.0.0"}}},"request_seq":1,"duration_ms":40,"seq":2,"ts":"2026-07-12T15:52:11.763Z","prev_hash":"85d00bda7e2c5701143eb7a76d85e067ade49ccb9ddeb9861083ae1e41bf3e96","hash":"79cbfc688969cf040277359a2d54090e1220d30bf0cc1cf5ef1d13f7a180f56e"}
+{"type":"notification","direction":"client->server","method":"notifications/initialized","payload":{"jsonrpc":"2.0","method":"notifications/initialized"},"seq":3,"ts":"2026-07-12T15:52:11.764Z","prev_hash":"79cbfc688969cf040277359a2d54090e1220d30bf0cc1cf5ef1d13f7a180f56e","hash":"380897e8f5f1b0364886d288b4951154c20978b3ff8abeed3fee78c311c9bb23"}
+{"type":"request","direction":"client->server","method":"tools/list","id":2,"payload":{"jsonrpc":"2.0","id":2,"method":"tools/list"},"seq":4,"ts":"2026-07-12T15:52:11.764Z","prev_hash":"380897e8f5f1b0364886d288b4951154c20978b3ff8abeed3fee78c311c9bb23","hash":"33520f57bc28f4cf50d98275dcb0d46a985e52903ea1c43ab2903fd1fd229e7f"}
+{"type":"response","direction":"server->client","id":2,"payload":{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"lookup_order","description":"Fetch an order by id","inputSchema":{"type":"object","properties":{"order_id":{"type":"string"}},"required":["order_id"]}},{"name":"issue_refund","description":"Refund an order (irreversible)","inputSchema":{"type":"object","properties":{"order_id":{"type":"string"},"amount_eur":{"type":"number"},"reason":{"type":"string"}},"required":["order_id","amount_eur"]}},{"name":"send_email","description":"Send a customer email","inputSchema":{"type":"object","properties":{"to":{"type":"string"},"subject":{"type":"string"},"body":{"type":"string"}},"required":["to","subject"]}}]}},"request_seq":4,"duration_ms":1,"seq":5,"ts":"2026-07-12T15:52:11.765Z","prev_hash":"33520f57bc28f4cf50d98275dcb0d46a985e52903ea1c43ab2903fd1fd229e7f","hash":"66cba78479d68992d5d439cccc81100863a76dde306079507b7abbdd28b2044b"}
+{"type":"request","direction":"client->server","method":"tools/call","id":3,"tool":"lookup_order","payload":{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"lookup_order","arguments":{"order_id":"A-1001"}}},"seq":6,"ts":"2026-07-12T15:52:11.765Z","prev_hash":"66cba78479d68992d5d439cccc81100863a76dde306079507b7abbdd28b2044b","hash":"1d51434ce3a40ebbc4b019771fbbf7f4e5d38eda3381189be79249deaf71418f"}
+{"type":"response","direction":"server->client","id":3,"payload":{"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"{\"order_id\":\"A-1001\",\"customer\":\"Erika Mustermann\",\"email\":\"[REDACTED]\",\"amount_eur\":249,\"status\":\"delivered\",\"iban\":\"[REDACTED]\"}"}],"isError":false}},"request_seq":6,"duration_ms":0,"seq":7,"ts":"2026-07-12T15:52:11.765Z","prev_hash":"1d51434ce3a40ebbc4b019771fbbf7f4e5d38eda3381189be79249deaf71418f","redactions":[{"id":"email","count":1},{"id":"iban","count":1}],"original_sha256":"962778b689d782af6baf36650a3ef7b645ad46ff9a297e68924ac43fe48c6164","hash":"7f5668d262a5a064fa0d687a0e4ffe505f88174a8f0801dad708af5acf0a570e"}
+{"type":"notification","direction":"client->server","method":"protokoll/annotation","payload":{"jsonrpc":"2.0","method":"protokoll/annotation","params":{"note":"Human approval: refund of 249.00 EUR authorized by supervisor J. Degen (ticket #4711)"}},"seq":8,"ts":"2026-07-12T15:52:11.766Z","prev_hash":"7f5668d262a5a064fa0d687a0e4ffe505f88174a8f0801dad708af5acf0a570e","hash":"0311e33fd7b6ad6bd0cff72b37bb7e6a893584f76e08defe989c53d715b34dc4"}
+{"type":"request","direction":"client->server","method":"tools/call","id":4,"tool":"issue_refund","payload":{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"issue_refund","arguments":{"order_id":"A-1001","amount_eur":249,"reason":"damaged on arrival"}}},"seq":9,"ts":"2026-07-12T15:52:11.766Z","prev_hash":"0311e33fd7b6ad6bd0cff72b37bb7e6a893584f76e08defe989c53d715b34dc4","hash":"2f3654b0a6c95621796d36516773d440a8c6013376b8edf58e9b503f435eef08"}
+{"type":"response","direction":"server->client","id":4,"payload":{"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"{\"refund_id\":\"R-2001\",\"order_id\":\"A-1001\",\"amount_eur\":249,\"refunded_to_iban\":\"[REDACTED]\",\"status\":\"processed\"}"}],"isError":false}},"request_seq":9,"duration_ms":0,"seq":10,"ts":"2026-07-12T15:52:11.766Z","prev_hash":"2f3654b0a6c95621796d36516773d440a8c6013376b8edf58e9b503f435eef08","redactions":[{"id":"iban","count":1}],"original_sha256":"3a6e0af69048521d6623881b8625138d1624a25ac64fc26fbc97ecaec9dfa9f9","hash":"840d44a6e50ee717af69f47009cd7597bad4e43eb903ff9d108575f9f3fbb054"}
+{"type":"request","direction":"client->server","method":"tools/call","id":5,"tool":"send_email","payload":{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"send_email","arguments":{"to":"[REDACTED]","subject":"Ihre Rückerstattung","body":"Sehr geehrte Frau Mustermann, 249,00 EUR wurden erstattet."}}},"seq":11,"ts":"2026-07-12T15:52:11.767Z","prev_hash":"840d44a6e50ee717af69f47009cd7597bad4e43eb903ff9d108575f9f3fbb054","redactions":[{"id":"email","count":1}],"original_sha256":"0b6acf5af7b6dc0663a86a4a9e869b3a4a2e9e11280b234c910ef0b84de80288","hash":"b55e8ea439bce61fb02145fc64b25d2d22d39f17dd9ea0d569d27a209d41886b"}
+{"type":"response","direction":"server->client","id":5,"payload":{"jsonrpc":"2.0","id":5,"result":{"content":[{"type":"text","text":"{\"delivered_to\":\"[REDACTED]\",\"subject\":\"Ihre Rückerstattung\",\"status\":\"sent\"}"}],"isError":false}},"request_seq":11,"duration_ms":0,"seq":12,"ts":"2026-07-12T15:52:11.767Z","prev_hash":"b55e8ea439bce61fb02145fc64b25d2d22d39f17dd9ea0d569d27a209d41886b","redactions":[{"id":"email","count":1}],"original_sha256":"55d36bf6d337e81022741095e7ecd57753c1cb04cfc9b2e94d08e2ffcd249022","hash":"74ac489c08d1b9e8a1ff7b52ba29a09775650be120415c6e45150776c14ae59c"}
+{"type":"exit","payload":{"code":0,"signal":null},"seq":13,"ts":"2026-07-12T15:52:11.771Z","prev_hash":"74ac489c08d1b9e8a1ff7b52ba29a09775650be120415c6e45150776c14ae59c","hash":"74dc3e8a01de17331ae7383fa8b224a09b92aea22ac0113e28b25eaa44fb658e"}
+{"type":"manifest","event_count":14,"chain_hash":"74dc3e8a01de17331ae7383fa8b224a09b92aea22ac0113e28b25eaa44fb658e","signature":"AfDZ20KxE5MsMoW6NYrS7MGTIOYDCY086lc09peU9nqqy/JUBJzmjrFxVrC77RO+JsW1gcJ5kFi18xqh37VQBw==","key_fingerprint":"14f304621bfca9df","public_key_spki_pem":"-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAbJpoO84bXn8ZqBX5SM9Mcl8Af8PVjT2ZCjO4do5I5Qg=\n-----END PUBLIC KEY-----\n","seq":14,"ts":"2026-07-12T15:52:11.772Z","prev_hash":"74dc3e8a01de17331ae7383fa8b224a09b92aea22ac0113e28b25eaa44fb658e","hash":"07a2f23b3b9ca0cf80e24f5a24bacf732fa713186de0860b0739945ab4df353d"}
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── canonical JSON + hashing (mirrors ATF spec §3–4) ──
+  function canonical(v) {
+    if (v === undefined) return 'null';
+    if (v === null || typeof v !== 'object') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map((x) => x === undefined ? 'null' : canonical(x)).join(',') + ']';
+    const keys = Object.keys(v).filter((k) => v[k] !== undefined).sort();
+    return '{' + keys.map((k) => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}';
+  }
+  async function sha256Hex(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  function hexToBytes(h) { return new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16))); }
+  function pemToBytes(pem) {
+    const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+    return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  }
+  async function verifySignature(events) {
+    const manifest = events[events.length - 1];
+    if (!manifest || manifest.type !== 'manifest' || !manifest.signature) return { state: 'unsigned' };
+    const pem = manifest.public_key_spki_pem || (events[0] && events[0].public_key_spki_pem);
+    if (!pem) return { state: 'no key' };
+    try {
+      const key = await crypto.subtle.importKey('spki', pemToBytes(pem), { name: 'Ed25519' }, false, ['verify']);
+      const ok = await crypto.subtle.verify('Ed25519', key,
+        Uint8Array.from(atob(manifest.signature), (c) => c.charCodeAt(0)), hexToBytes(manifest.chain_hash));
+      return { state: ok ? 'valid' : 'INVALID', ok };
+    } catch { return { state: 'n/a in this browser' }; }
+  }
+
+  // ── datasets ──
+  const raw = $('trace-data').textContent.trim();
+  const pristine = raw.split('\n').map((l) => l.trim()).filter(Boolean)
+    .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  function forge(events) {
+    const copy = JSON.parse(JSON.stringify(events));
+    for (const ev of copy) {
+      const args = ev.payload && ev.payload.params && ev.payload.params.arguments;
+      if (ev.tool === 'issue_refund' && args && typeof args.amount_eur === 'number') {
+        args.amount_eur = args.amount_eur * 100; // the classic: inflate after the fact
+      }
+    }
+    return copy;
+  }
+
+  let events = pristine;
+  let tampered = false;
+  let cursor = 0, timer = null, verified = 0, broken = false, brokenAt = -1;
+
+  // ── rendering ──
+  function describe(ev) {
+    const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const short = (o, n = 78) => { const s = canonical(o); return esc(s.length > n ? s.slice(0, n) + '…' : s); };
+    switch (ev.type) {
+      case 'header': return `<span class="m">HEADER</span> spec ${esc(ev.spec)} · rules [${(ev.redaction_rules || []).join(', ')}]`;
+      case 'manifest': return `<span class="m">MANIFEST</span> ${ev.event_count} events · chain ${esc(String(ev.chain_hash).slice(0, 12))}… · ${ev.signature ? 'SIGNED' : 'UNSIGNED'}`;
+      case 'checkpoint': return `<span class="m">CHECKPOINT</span> signs chain ${esc(String(ev.chain_hash).slice(0, 12))}…`;
+      case 'request': {
+        const tool = ev.tool ? ` <span class="m">${esc(ev.tool)}</span>` : '';
+        const args = ev.payload && ev.payload.params && ev.payload.params.arguments;
+        return `→ ${esc(ev.method)}${tool} ${args ? short(args) : ''}`;
+      }
+      case 'response': {
+        const body = ev.payload && (ev.payload.error !== undefined ? ev.payload.error : ev.payload.result);
+        return `← response #${esc(ev.id)}${ev.duration_ms !== undefined ? ' (' + ev.duration_ms + ' ms)' : ''} ${short(body, 64)}`;
+      }
+      case 'notification': {
+        const note = ev.payload && ev.payload.params && ev.payload.params.note;
+        return note ? `⚑ ${esc(note)}<span class="tag">HUMAN OVERSIGHT</span>` : `→ ${esc(ev.method)}`;
+      }
+      case 'stderr': return `· stderr ${short((ev.payload || {}).text || '', 60)}`;
+      case 'exit': return `· process exit ${short(ev.payload)}`;
+      default: return `· ${esc(ev.type)}`;
+    }
+  }
+  function build() {
+    const t0 = Date.parse(events[0] && events[0].ts || 0);
+    $('events').innerHTML = events.map((ev, i) => {
+      const dt = ev.ts ? ((Date.parse(ev.ts) - t0) / 1000).toFixed(3) : '?';
+      const human = ev.method === 'protokoll/annotation' ? ' human' : '';
+      return `<li class="ev${human}" id="ev-${i}">
+        <span class="seq">${String(ev.seq).padStart(3, '0')}</span>
+        <span class="t">+${dt}s</span>
+        <span class="desc">${describe(ev)}</span>
+        <span class="link" id="link-${i}">·</span></li>`;
+    }).join('');
+    const header = events[0] || {};
+    $('m-trace').textContent = String(header.trace_id || '?').slice(0, 8) + '…';
+    $('m-date').textContent = (header.created_at || '?').slice(0, 19).replace('T', ' ') + 'Z';
+    $('m-key').textContent = header.key_fingerprint || 'unsigned';
+    $('r-count').textContent = events.length;
+    $('r-red').textContent = events.filter((e) => e.redactions).length;
+    $('r-human').textContent = events.filter((e) => e.method === 'protokoll/annotation').length;
+  }
+
+  function setVerdict(cls, text, sub) {
+    const v = $('verdict');
+    v.className = 'verdict ' + cls + (reduced ? '' : ' stamp');
+    v.innerHTML = text + '<small>' + sub + '</small>';
+  }
+
+  // ── the replay engine: verify one link per tick ──
+  async function tick() {
+    if (cursor >= events.length) { finish(); return; }
+    const i = cursor++;
+    const ev = events[i];
+    const row = $('ev-' + i); const link = $('link-' + i);
+    row.classList.add('lit');
+    row.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+
+    if (broken) {
+      row.classList.add('orphan'); link.textContent = 'orphaned';
+    } else {
+      const { hash, ...rest } = ev;
+      const prevHash = i === 0 ? 'GENESIS' : events[i - 1].hash;
+      const recomputed = await sha256Hex(canonical(rest));
+      if (ev.prev_hash === prevHash && recomputed === hash) {
+        verified++; row.classList.add('ok');
+        link.textContent = '⛓ ' + String(hash).slice(0, 8);
+      } else {
+        broken = true; brokenAt = ev.seq;
+        row.classList.add('bad'); link.textContent = 'HASH MISMATCH';
+        $('r-chain').textContent = 'BROKEN @ seq ' + ev.seq;
+        $('r-chain').className = 'bad';
+      }
+    }
+    $('r-verified').textContent = verified;
+    if (timer !== null) timer = setTimeout(tick, reduced ? 40 : 340);
+  }
+
+  async function finish() {
+    pause();
+    const sig = await verifySignature(events);
+    $('r-sig').textContent = sig.state;
+    $('r-sig').className = sig.state === 'valid' ? 'ok' : (sig.state === 'INVALID' ? 'bad' : 'warn');
+    if (broken) {
+      setVerdict('bad', 'DO NOT TRUST', 'record altered after the fact — first lie at seq ' + brokenAt);
+    } else {
+      $('r-chain').textContent = 'intact'; $('r-chain').className = 'ok';
+      setVerdict('ok', 'TRUSTWORTHY', 'all ' + verified + ' links verified · ' + (sig.state === 'valid' ? 'signature valid' : 'signature: ' + sig.state));
+    }
+  }
+
+  function play() { if (timer !== null || cursor >= events.length) return; $('tape').classList.add('playing'); $('btn-play').textContent = 'Pause'; timer = setTimeout(tick, 60); }
+  function pause() { if (timer !== null) clearTimeout(timer); timer = null; $('tape').classList.remove('playing'); $('btn-play').textContent = 'Play'; }
+  function reset() {
+    pause(); cursor = 0; verified = 0; broken = false; brokenAt = -1;
+    build();
+    $('r-chain').textContent = 'standby'; $('r-chain').className = '';
+    $('r-sig').textContent = 'standby'; $('r-sig').className = '';
+    $('r-verified').textContent = '0';
+    setVerdict('', 'AWAITING REPLAY', 'press play — your browser verifies each step');
+  }
+
+  $('btn-play').addEventListener('click', () => timer === null ? play() : pause());
+  $('btn-step').addEventListener('click', () => { pause(); tick(); });
+  $('btn-reset').addEventListener('click', reset);
+  $('btn-tamper').addEventListener('click', () => {
+    tampered = !tampered;
+    $('btn-tamper').setAttribute('aria-pressed', String(tampered));
+    events = tampered ? forge(pristine) : pristine;
+    reset(); play();
+  });
+
+  const drop = $('drop');
+  ['dragover', 'dragenter'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', async (e) => {
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const parsed = text.split('\n').map((l) => l.trim()).filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    if (!parsed.length || !parsed[0].hash) { drop.textContent = 'not a readable ATF trace — expected .jsonl with hashed events'; return; }
+    events = parsed; tampered = false; $('btn-tamper').setAttribute('aria-pressed', 'false');
+    drop.textContent = 'replaying: ' + file.name;
+    reset(); play();
+  });
+
+  build();
+})();
+</script>
+
+</body>
+</html>
