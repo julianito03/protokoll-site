@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BLACKBOX — Flight Replay</title>
+<title>PROTOKOLL — Flight Replay</title>
 <style>
   :root {
     --ground: #0b0e12;
@@ -13,7 +13,7 @@
     --ink: #e8edf2;
     --dim: #8a96a3;
     --faint: #5a6572;
-    --orange: #ff6a2b;
+    --orange: #e8edf2;
     --ok: #46d99a;
     --warn: #ffb454;
     --alarm: #ff4d5e;
@@ -38,9 +38,9 @@
   }
   .recorder-badge {
     width: 46px; height: 46px; border-radius: 6px; flex: none;
-    background: linear-gradient(160deg, #ff7a3d, #e04f10);
+    background: #e8edf2;
     display: grid; place-items: center;
-    box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 2px 10px rgba(255,106,43,.25);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.25);
   }
   .recorder-badge svg { display: block; }
   .placard h1 {
@@ -121,8 +121,8 @@
   }
   button:hover { border-color: #46536383; background: #202936; }
   button:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
-  button.primary { background: var(--orange); border-color: var(--orange); color: #14100c; }
-  button.primary:hover { background: #ff7c45; }
+  button.primary { background: #e8edf2; border-color: #e8edf2; color: #14100c; }
+  button.primary:hover { background: #ffffff; }
   button:disabled { opacity: .45; cursor: default; }
   .switch { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   .switch .label { font-size: 10px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
@@ -145,7 +145,7 @@
 
 <div class="console" style="padding-bottom:0">
   <p style="font-family:var(--sans);font-size:12px;letter-spacing:.08em;margin:0 0 10px">
-    <a href="index.html" style="color:var(--dim);text-decoration:none">&larr; blackbox — back to overview</a></p>
+    <a href="index.html" style="color:var(--dim);text-decoration:none">&larr; protokoll — back to overview</a></p>
   <div style="border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:14px 18px;font-size:13px;line-height:1.7;color:var(--dim)">
     <b style="color:var(--ink)">What you're watching:</b> a real sealed recording of an AI support agent refunding order A-1001 (€249).
     Press <b style="color:var(--ink)">Play</b> — each row is one action, and the green link means your own browser just re-checked
@@ -161,7 +161,7 @@
         <circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.6" fill="#14100c" stroke="none"></circle>
       </svg>
     </div>
-    <h1>BLACKBOX · FLIGHT REPLAY<small>Tamper-evident record of one AI agent flight — verified live in your browser</small></h1>
+    <h1>PROTOKOLL · FLIGHT REPLAY<small>Tamper-evident record of one AI agent flight — verified live in your browser</small></h1>
     <div class="meta">
       trace <b id="m-trace">—</b><br>
       recorded <b id="m-date">—</b><br>

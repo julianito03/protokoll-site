@@ -3,312 +3,272 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BLACKBOX — The flight recorder for AI agents</title>
+<title>PROTOKOLL — The flight recorder for AI agents</title>
 <meta name="description" content="A tamper-evident, signed record of every action your AI agents take. Replay any incident. Prove nothing was altered. EU AI Act Article 12 evidence, installed in 30 minutes.">
 <style>
   :root {
-    --paper: #eeefe9;
-    --paper-2: #e6e7e0;
-    --ink: #14161a;
-    --slate: #4e555e;
-    --faint: #878e96;
-    --line: #c7cabf;
-    --rule: #14161a;
-    --orange: #e84e10;
-    --orange-deep: #b93a08;
-    --carbon: #101418;
-    --carbon-2: #171d24;
-    --ok: #1f7a5c;
-    --alarm: #be1e2d;
-    --disp: "Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", "Arial", sans-serif;
-    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --paper: #ffffff;
+    --ink: #000000;
+    --grey: #5c5c5c;
+    --faint: #9a9a9a;
+    --rule: #000000;
+    --hair: #cfcfcf;
+    --form: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --type: "Courier New", Courier, ui-monospace, monospace;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
-  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 22px; }
-  a { color: var(--orange-deep); }
-  ::selection { background: var(--orange); color: #fff; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--form); line-height: 1.5; }
+  .sheet { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  a { color: var(--ink); }
+  ::selection { background: var(--ink); color: var(--paper); }
 
-  /* ── data plate ────────────────────────────── */
-  .plate {
-    border-bottom: 2px solid var(--rule); font-family: var(--mono); font-size: 11px;
-    letter-spacing: .08em; color: var(--slate);
-  }
-  .plate .wrap { display: flex; gap: 18px; padding: 10px 22px; flex-wrap: wrap; }
-  .plate b { color: var(--ink); }
-  .plate .right { margin-left: auto; display: flex; gap: 18px; }
-  .plate a { color: var(--slate); text-decoration: none; }
-  .plate a:hover { color: var(--ink); }
+  /* form voice vs typed voice */
+  .lbl { font-family: var(--form); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--grey); }
+  .typed { font-family: var(--type); font-size: 14.5px; color: var(--ink); }
 
-  /* ── hero ────────────────────────────── */
-  .hero { border-bottom: 2px solid var(--rule); overflow: hidden; }
-  .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 30px; align-items: center; padding-top: 44px; padding-bottom: 44px; }
-  @media (max-width: 860px) { .hero .wrap { grid-template-columns: 1fr; } }
-  .hero h1 {
-    font-family: var(--disp); font-weight: 700; text-transform: uppercase;
-    font-size: clamp(64px, 11vw, 128px); line-height: .88; letter-spacing: -.015em; margin: 0;
-  }
-  .hero h1 span { color: var(--orange); }
-  .hero .sub {
-    font-family: var(--mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--slate); margin: 16px 0 0; border-top: 1px solid var(--line); padding-top: 12px; max-width: 46ch;
-  }
-  .hero .claim { font-size: 18px; color: var(--ink); max-width: 52ch; margin: 18px 0 26px; }
-  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .btn {
-    display: inline-block; text-decoration: none; font-family: var(--mono); font-size: 12.5px;
-    letter-spacing: .06em; font-weight: 700; padding: 15px 20px; border: 2px solid var(--rule);
-    color: var(--ink); background: transparent; text-transform: uppercase;
-  }
+  /* masthead */
+  .masthead { border-bottom: 3px solid var(--rule); padding: 34px 0 0; }
+  .masthead h1 { font-size: clamp(58px, 12vw, 132px); margin: 0; font-weight: 700; letter-spacing: -.04em; line-height: .9; }
+  .masthead .row2 { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; padding: 10px 0 12px; }
+  .masthead .row2 .lbl b { color: var(--ink); }
+
+  /* form header grid */
+  .formhead { border-bottom: 3px solid var(--rule); }
+  .fh { display: grid; grid-template-columns: repeat(4, 1fr); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  @media (max-width: 720px) { .fh { grid-template-columns: repeat(2, 1fr); } }
+  .fh > div { border-top: 1px solid var(--rule); padding: 10px 14px 12px; }
+  .fh > div + div { border-left: 1px solid var(--rule); }
+  @media (max-width: 720px) { .fh > div:nth-child(odd) { border-left: 0; } }
+  .fh .lbl { display: block; margin-bottom: 4px; }
+  .fh .wide { grid-column: 1 / -1; border-left: 0; }
+
+  /* clauses */
+  .clause { border-bottom: 1px solid var(--rule); padding: 40px 0 44px; }
+  .clause .no { font-family: var(--type); font-weight: 700; font-size: 15px; }
+  .clause h2 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; margin: 6px 0 18px; text-wrap: balance; }
+  .clause .lead { font-family: var(--type); font-size: 15px; color: var(--ink); max-width: 68ch; margin: 0 0 22px; }
+
+  /* record rows: dotted fill-ins */
+  .rec { display: grid; grid-template-columns: 170px 1fr; gap: 18px; padding: 12px 0; border-top: 1px solid var(--hair); }
+  .rec:last-of-type { border-bottom: 1px solid var(--hair); }
+  @media (max-width: 640px) { .rec { grid-template-columns: 1fr; gap: 4px; } }
+  .rec .v { font-family: var(--type); font-size: 14px; color: var(--ink); max-width: 66ch; }
+  .rec .v .neg { background: var(--ink); color: var(--paper); padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+  .rec .v .pos { border: 2px solid var(--ink); padding: 0 5px; font-weight: 700; white-space: nowrap; }
+
+  /* checkbox list */
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: grid; grid-template-columns: 22px 150px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--hair); align-items: baseline; }
+  .checks li:last-child { border-bottom: 1px solid var(--hair); }
+  @media (max-width: 640px) { .checks li { grid-template-columns: 22px 1fr; } .checks li .lbl { display: none; } }
+  .cb { width: 15px; height: 15px; border: 2px solid var(--ink); display: inline-block; position: relative; top: 2px; }
+  .cb::after { content: "✕"; position: absolute; inset: -4px 0 0 1px; font-family: var(--type); font-weight: 700; font-size: 15px; }
+  .checks .v { font-family: var(--type); font-size: 14px; max-width: 64ch; }
+  .checks .v b { font-weight: 700; }
+
+  /* code block: strictly b/w, inverted */
+  .code { background: var(--ink); color: var(--paper); padding: 20px 22px; font-family: var(--type); font-size: 13.5px; overflow-x: auto; line-height: 1.9; }
+  .code .c { color: #8a8a8a; } .code .add { background: var(--paper); color: var(--ink); font-weight: 700; padding: 0 4px; }
+
+  /* exhibit plate */
+  .exhibit { background: var(--ink); color: var(--paper); padding: 34px; margin-top: 8px; }
+  .exhibit .lbl { color: #9a9a9a; }
+  .exhibit h3 { font-size: clamp(22px, 3.6vw, 30px); margin: 8px 0 12px; letter-spacing: -.01em; }
+  .exhibit p { font-family: var(--type); font-size: 14px; color: #cfcfcf; max-width: 62ch; }
+  .exhibit .readout { border: 1px solid #4a4a4a; padding: 16px 18px; font-family: var(--type); font-size: 12.5px; line-height: 2; color: #9a9a9a; margin: 18px 0; max-width: 560px; }
+  .exhibit .readout .hit { background: var(--paper); color: var(--ink); font-weight: 700; padding: 0 4px; }
+
+  /* buttons */
+  .btn { display: inline-block; text-decoration: none; font-family: var(--type); font-weight: 700; font-size: 13px;
+    letter-spacing: .04em; padding: 14px 20px; border: 2px solid var(--ink); color: var(--ink); background: var(--paper); text-transform: uppercase; }
   .btn:hover { background: var(--ink); color: var(--paper); }
-  .btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
-  .btn.primary:hover { background: var(--orange-deep); border-color: var(--orange-deep); }
-  .btn:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
-  .hero .note { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-top: 14px; }
+  .btn.fill { background: var(--ink); color: var(--paper); }
+  .btn.fill:hover { background: var(--paper); color: var(--ink); }
+  .exhibit .btn { border-color: var(--paper); color: var(--paper); background: transparent; }
+  .exhibit .btn:hover { background: var(--paper); color: var(--ink); }
+  .btn:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
 
-  /* the recorder unit — drawn, not photographed */
-  .unit { justify-self: center; width: min(340px, 88%); }
-  .unit .body {
-    background: linear-gradient(175deg, #f4692b 0%, var(--orange) 42%, #c8420b 100%);
-    border: 2px solid #7e2a05; border-radius: 16px; padding: 22px 20px 18px;
-    box-shadow: 8px 10px 0 rgba(20,22,26,.18);
-    position: relative;
-  }
-  .unit .band { height: 10px; background: repeating-linear-gradient(135deg, #fff 0 12px, #14161a 12px 24px); border: 1px solid #7e2a05; border-radius: 3px; }
-  .unit .stencil {
-    font-family: var(--mono); font-weight: 700; color: #fff; text-transform: uppercase;
-    letter-spacing: .18em; text-align: center; margin: 18px 0; line-height: 2;
-    font-size: 13px; text-shadow: 0 1px 0 rgba(0,0,0,.25);
-  }
-  .unit .stencil small { display: block; font-size: 9.5px; letter-spacing: .3em; opacity: .92; }
-  .unit .rivets { display: flex; justify-content: space-between; padding: 0 4px; margin-top: 14px; }
-  .unit .rivets i { width: 9px; height: 9px; border-radius: 50%; background: #8a2f06; box-shadow: inset 0 1px 1px rgba(255,255,255,.5); }
-  .unit .tag {
-    margin: 14px auto 0; width: fit-content; font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
-    background: var(--paper); border: 1.5px solid var(--rule); padding: 6px 12px; color: var(--ink);
-    transform: rotate(-1.2deg);
-  }
+  /* deadline */
+  .big-date { font-family: var(--type); font-weight: 700; font-size: clamp(40px, 9vw, 92px); letter-spacing: -.02em; margin: 0 0 10px; }
+  .big-date u { text-decoration: underline; text-decoration-thickness: 6px; text-underline-offset: 10px; }
 
-  /* ── report sections ────────────────────────────── */
-  section { border-bottom: 2px solid var(--rule); }
-  .sec { display: grid; grid-template-columns: 190px 1fr; gap: 30px; padding: 46px 0; }
-  @media (max-width: 760px) { .sec { grid-template-columns: 1fr; gap: 12px; padding: 34px 0; } }
-  .sec-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--slate); text-transform: uppercase; line-height: 2; }
-  .sec-label b { display: block; color: var(--orange-deep); font-size: 13px; }
-  .sec h2 { font-family: var(--disp); text-transform: uppercase; font-weight: 700; font-size: clamp(26px, 4.4vw, 40px); line-height: 1; letter-spacing: -.01em; margin: 0 0 16px; text-wrap: balance; }
-  .sec .lead { font-size: 16.5px; color: var(--slate); max-width: 62ch; margin: 0 0 22px; }
-  .sec .lead b { color: var(--ink); }
-
-  /* narrative rows with dotted leaders */
-  .row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 13px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
-  .row:last-child { border-bottom: 1px solid var(--line); }
-  @media (max-width: 600px) { .row { grid-template-columns: 1fr; gap: 4px; } }
-  .row .k { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--faint); text-transform: uppercase; padding-top: 3px; }
-  .row .v { color: var(--slate); max-width: 64ch; }
-  .row .v b { color: var(--ink); }
-  .row .v .stamp-ok { color: var(--ok); font-family: var(--mono); font-weight: 700; }
-  .row .v .stamp-bad { color: var(--alarm); font-family: var(--mono); font-weight: 700; }
-
-  /* evidence tag chips */
-  .etag { display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; border: 1.5px solid var(--orange-deep); color: var(--orange-deep); padding: 3px 8px; margin-right: 8px; text-transform: uppercase; }
-
-  /* code block */
-  .code { background: var(--carbon); color: #e8edf2; padding: 20px 22px; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; line-height: 1.9; border: 2px solid var(--rule); }
-  .code .c { color: #6b7580; } .code .add { color: #ffb454; font-weight: 700; }
-
-  /* demo band */
-  .demo { background: var(--carbon); color: #e8edf2; }
-  .demo .sec { border: 0; }
-  .demo .sec-label { color: #8a96a3; } .demo .sec-label b { color: #ff8a50; }
-  .demo h2 { color: #fff; }
-  .demo .lead { color: #9aa4ae; }
-  .demo .readout { font-family: var(--mono); font-size: 12.5px; line-height: 2.1; border: 1px solid #2a333e; background: var(--carbon-2); padding: 18px 20px; color: #9aa4ae; margin: 20px 0; max-width: 560px; }
-  .demo .readout .ok { color: #46d99a; } .demo .readout .bad { color: #ff4d5e; font-weight: 700; }
-  .demo .btn { color: #e8edf2; border-color: #e8edf2; }
-  .demo .btn:hover { background: #e8edf2; color: var(--carbon); }
-  .demo .btn.primary { color: #fff; border-color: var(--orange); background: var(--orange); }
-  .demo .btn.primary:hover { background: var(--orange-deep); border-color: var(--orange-deep); }
-
-  /* clock */
-  .clock { font-family: var(--disp); font-weight: 700; font-size: clamp(44px, 9vw, 96px); line-height: 1; letter-spacing: .02em; color: var(--orange); margin: 0 0 10px; font-variant-numeric: tabular-nums; }
-
-  /* FAQ as inquiry entries */
-  details { border-top: 1px solid var(--line); }
-  details:last-of-type { border-bottom: 1px solid var(--line); }
-  summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 14px 0; font-size: 15px; font-weight: 700; }
-  @media (max-width: 600px) { summary { grid-template-columns: 1fr; gap: 2px; } }
+  /* inquiries */
+  details { border-top: 1px solid var(--hair); }
+  details:last-of-type { border-bottom: 1px solid var(--hair); }
+  summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: 110px 1fr 20px; gap: 14px; padding: 14px 0; font-family: var(--type); font-size: 14.5px; font-weight: 700; align-items: baseline; }
   summary::-webkit-details-marker { display: none; }
-  summary .q { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--faint); padding-top: 3px; }
-  details[open] summary .q, summary:hover .q { color: var(--orange-deep); }
-  details p { margin: 0 0 16px; padding-left: 166px; color: var(--slate); max-width: 66ch; font-size: 14.5px; }
-  @media (max-width: 600px) { details p { padding-left: 0; } }
+  summary .q { font-weight: 400; color: var(--grey); font-size: 12px; letter-spacing: .1em; }
+  summary .mark::after { content: "+"; font-family: var(--type); font-weight: 700; }
+  details[open] summary .mark::after { content: "–"; }
+  details p { margin: 0 0 18px; padding-left: 124px; font-family: var(--type); font-size: 13.5px; color: var(--ink); max-width: 64ch; }
+  @media (max-width: 640px) { summary { grid-template-columns: 1fr 20px; } summary .q { display: none; } details p { padding-left: 0; } }
 
-  footer { padding: 30px 0 70px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--slate); }
-  footer .wrap { display: flex; gap: 24px; flex-wrap: wrap; justify-content: space-between; }
-  footer a { color: var(--slate); }
+  /* signature block */
+  .sig { display: grid; grid-template-columns: 1fr 220px; gap: 40px; align-items: end; margin-top: 30px; }
+  @media (max-width: 640px) { .sig { grid-template-columns: 1fr; } }
+  .sigline { border-top: 2px solid var(--ink); padding-top: 8px; }
+  .sigline .typed { font-size: 16px; }
+  .seal { justify-self: end; transform: rotate(-7deg); }
+  @media (max-width: 640px) { .seal { justify-self: start; } }
+
+  footer { padding: 26px 0 70px; }
+  footer .sheet { display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; font-family: var(--type); font-size: 12px; }
 
   @media (prefers-reduced-motion: no-preference) {
-    .hero h1, .hero .sub, .hero .claim, .cta-row, .unit { animation: rise .5s ease-out both; }
-    .unit { animation-delay: .12s; }
-    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .masthead h1 { animation: setin .4s ease-out both; }
+    @keyframes setin { from { opacity: 0; letter-spacing: 0; } to { opacity: 1; letter-spacing: -.04em; } }
   }
+  @media print { .btn { border-width: 1px; } }
 </style>
 </head>
 <body>
 
-<div class="plate">
-  <div class="wrap">
-    <span><b>BLACKBOX</b> · FLIGHT RECORDER FOR AI AGENTS</span>
-    <span>BUILT IN GERMANY</span>
-    <span class="right">
-      <a href="#install">Installation</a>
-      <a href="#evidence">Evidence</a>
-      <a href="#inquiries">Inquiries</a>
-      <a href="replay.html">Live replay</a>
-    </span>
-  </div>
-</div>
-
-<header class="hero">
-  <div class="wrap">
-    <div>
-      <h1>BLACK<span>BOX</span></h1>
-      <p class="sub">Every aircraft carries one. Your AI agents don't. Yet.</p>
-      <p class="claim">AI agents at work refund customers, send emails, move money. BLACKBOX records every action into a sealed file that cannot be altered without detection — so when someone asks <b>"what did the AI actually do?"</b>, you press play and prove it.</p>
-      <div class="cta-row">
-        <a class="btn primary" href="replay.html">Watch a forged refund get caught</a>
-        <a class="btn" href="mailto:juliandegen4@gmail.com?subject=BLACKBOX%20design%20partner">Request a slot</a>
-      </div>
-      <p class="note">runs on your infrastructure · open file format · installed in ~30 minutes</p>
-    </div>
-    <div class="unit" aria-hidden="true">
-      <div class="body">
-        <div class="band"></div>
-        <p class="stencil">FLIGHT RECORDER<br>DO NOT OPEN<small>UNIT 01 · SN 2026-0712 · ED25519</small></p>
-        <div class="band"></div>
-        <div class="rivets"><i></i><i></i><i></i><i></i><i></i></div>
-      </div>
-      <p class="tag">EXHIBIT A — recovered intact, chain verified</p>
+<header class="masthead">
+  <div class="sheet">
+    <h1>PROTOKOLL</h1>
+    <div class="row2">
+      <span class="lbl">Official record of AI agent conduct · <b>form ATF/0.1</b></span>
+      <span class="lbl"><a href="replay.html" style="text-decoration:none">EXHIBIT A: LIVE REPLAY →</a></span>
     </div>
   </div>
 </header>
 
-<section>
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 01</b>The occurrence</div>
-    <div>
-      <h2>Incident A-1001: the €24,900 refund</h2>
-      <p class="lead">An AI support agent refunds a customer <b>€249</b>. Weeks later the books show <b>€24,900</b> left the account. Reconstruct what happened:</p>
-      <div class="row"><span class="k">Without recorder</span><span class="v">The agent's history sits in ordinary logs and databases. Anyone with access could have rewritten them. <span class="stamp-bad">NOTHING PROVABLE</span> — not to the auditor, not to the insurer, not in court.</span></div>
-      <div class="row"><span class="k">With BLACKBOX</span><span class="v">The sealed recording replays the incident step by step and pinpoints the exact entry that was altered after the fact. <span class="stamp-ok">FIRST LIE AT SEQ 9</span> — detection is mathematics, not trust.</span></div>
-      <div class="row"><span class="k">Who asks</span><span class="v">Your enterprise customer's due-diligence questionnaire. Your regulator (EU AI Act, Art. 12 record-keeping). Your insurer. The question is identical: <b>prove what the agent did.</b></span></div>
+<div class="formhead">
+  <div class="sheet" style="padding:0 24px">
+    <div class="fh">
+      <div class="wide">
+        <span class="lbl">Subject of record</span>
+        <span class="typed">The flight recorder for AI agents — a tamper-evident, signed record of every action an AI agent takes. Replay any incident. Prove nothing was altered.</span>
+      </div>
+      <div><span class="lbl">File ref.</span><span class="typed">ATF-0.1/2026</span></div>
+      <div><span class="lbl">Jurisdiction</span><span class="typed">EU · built in Germany</span></div>
+      <div><span class="lbl">Installation</span><span class="typed">~30 minutes</span></div>
+      <div><span class="lbl">Status</span><span class="typed">5 design-partner slots open</span></div>
     </div>
+  </div>
+</div>
+
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 1</span>
+    <h2>The matter: incident A-1001, the €24,900 refund</h2>
+    <p class="lead">An AI support agent refunds a customer €249. Weeks later, the books show €24,900 left the account. Reconstruction of events:</p>
+    <div class="rec"><span class="lbl">Without recorder</span><span class="v">The agent's history sits in ordinary logs. Anyone with access could have rewritten them. Finding: <span class="neg">NOTHING PROVABLE</span> — not to the auditor, the insurer, or the court.</span></div>
+    <div class="rec"><span class="lbl">With Protokoll</span><span class="v">The sealed recording replays the incident step by step and pinpoints the altered entry. Finding: <span class="pos">FIRST LIE AT SEQ 9</span> — detection is mathematics, not trust.</span></div>
+    <div class="rec"><span class="lbl">Who will ask</span><span class="v">Your enterprise customer's due-diligence questionnaire. Your regulator (EU AI Act, Art. 12). Your insurer. Identical question: prove what the agent did.</span></div>
   </div>
 </section>
 
-<section id="install">
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 02</b>Installation</div>
-    <div>
-      <h2>Three words in one config line</h2>
-      <p class="lead">Agents act through tool connections (MCP — the industry's standard plug). BLACKBOX is an adapter inside that plug: your agent behaves identically, and every message passing through is sealed into the record.</p>
-      <div class="code"><span class="c"># before</span>
+<section class="clause" id="install">
+  <div class="sheet">
+    <span class="no">§ 2</span>
+    <h2>Installation: three words in one config line</h2>
+    <p class="lead">Agents act through tool connections (MCP — the industry's standard plug). Protokoll is an adapter inside that plug. The agent behaves identically; every message passing through is sealed into the record.</p>
+    <div class="code"><span class="c"># before</span>
 command: node payments-server.js
 
 <span class="c"># after — that is the entire installation</span>
-command: <span class="add">blackbox wrap --</span> node payments-server.js</div>
-      <div class="row" style="margin-top:22px"><span class="k">Data custody</span><span class="v">Recordings stay on <b>your</b> servers. Nothing is sent to us — we sell the recorder, not access to your evidence.</span></div>
-      <div class="row"><span class="k">Privacy</span><span class="v">Emails, IBANs, any pattern you define are stripped <b>before</b> anything touches disk; the seal still proves what the original was. Built for GDPR data-minimization.</span></div>
-      <div class="row"><span class="k">Overhead</span><span class="v">Messages are relayed byte-for-byte untouched and sealed out-of-band — microseconds per event. A recorder that changed behavior would be worthless as evidence.</span></div>
+command: <span class="add">protokoll wrap --</span> node payments-server.js</div>
+    <div class="rec" style="margin-top:24px"><span class="lbl">Data custody</span><span class="v">Recordings remain on your servers. Nothing is transmitted to us — we sell the recorder, never access to your evidence.</span></div>
+    <div class="rec"><span class="lbl">Privacy</span><span class="v">Emails, IBANs, any pattern you define are stripped before anything touches disk; the seal still proves what the original was. GDPR data-minimization by construction.</span></div>
+    <div class="rec"><span class="lbl">Overhead</span><span class="v">Messages relay byte-for-byte untouched; sealing happens out-of-band. Microseconds per event.</span></div>
+  </div>
+</section>
+
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 3</span>
+    <h2>Evidence design — properties on record</h2>
+    <ul class="checks">
+      <li><span class="cb" aria-hidden="true"></span><span class="lbl">Chained</span><span class="v"><b>Every entry is locked to the one before it.</b> Edit, delete, insert, or reorder anything — the chain breaks visibly at that exact point.</span></li>
+      <li><span class="cb" aria-hidden="true"></span><span class="lbl">Signed</span><span class="v"><b>The record is signed (Ed25519).</b> A forger without the key cannot re-seal the file: the recording is attributable, not merely intact.</span></li>
+      <li><span class="cb" aria-hidden="true"></span><span class="lbl">Crash-proof</span><span class="v"><b>Checkpoints seal the record as it runs.</b> If the machine dies mid-flight, everything up to the last checkpoint remains provable.</span></li>
+      <li><span class="cb" aria-hidden="true"></span><span class="lbl">Open format</span><span class="v"><b>Traces use ATF, an open royalty-free format.</b> Verification is ~100 lines of standard cryptography anyone can implement. Evidence only we could read would be worthless to you.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 4</span>
+    <h2>Demonstration</h2>
+    <div class="exhibit">
+      <span class="lbl">Exhibit A — interactive</span>
+      <h3>Press play. Then try to lie to it.</h3>
+      <p>A real sealed recording, verified live by your own browser — then a forged copy of the same file, where the refund was quietly inflated a hundredfold.</p>
+      <div class="readout" aria-hidden="true">[009] tools/call issue_refund .... verified<br>[010] response R-2001 ........... verified<br>— tamper switch flipped —<br>[009] amount 249 → 24 900 ....... <span class="hit">HASH MISMATCH</span><br>verdict ......................... <span class="hit">DO NOT TRUST</span> · first lie at seq 9</div>
+      <a class="btn" href="replay.html">Open the live replay</a>
     </div>
   </div>
 </section>
 
-<section class="demo">
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 03</b>Demonstration</div>
-    <div>
-      <h2>Press play. Then try to lie to it.</h2>
-      <p class="lead">A real sealed recording, verified live by your own browser — then a forged copy of the same file, where the refund was quietly inflated a hundredfold.</p>
-      <div class="readout" aria-hidden="true">[009] tools/call issue_refund <span class="ok">⛓ verified</span><br>[010] response R-2001 <span class="ok">⛓ verified</span><br>— tamper switch flipped —<br>[009] amount 249 → 24 900 <span class="bad">HASH MISMATCH</span><br>verdict: <span class="bad">DO NOT TRUST</span> · first lie at seq 9</div>
-      <div class="cta-row">
-        <a class="btn primary" href="replay.html">Open the live replay</a>
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 5</span>
+    <h2>Coverage boundary — stated for the record</h2>
+    <div class="rec"><span class="lbl">Unwrapped doors</span><span class="v">Each tool connection you wrap is covered; a door without a camera is not filmed. Wrapping every connection takes seconds apiece.</span></div>
+    <div class="rec"><span class="lbl">Other parties</span><span class="v">We record your side of every interaction — what your agent did and was asked. Like dashcams, each party carries its own recorder; you prove your own conduct, which is what you are liable for.</span></div>
+    <div class="rec"><span class="lbl">Recording time</span><span class="v">We prove the record was not altered afterwards — not that the machine was uncompromised while recording. The full threat model ships with the product, in writing.</span></div>
+  </div>
+</section>
+
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 6</span>
+    <h2>Regulatory deadline</h2>
+    <p class="big-date"><u>02.08.2026</u></p>
+    <p class="lead">EU AI Act record-keeping obligations for high-risk AI systems apply. Penalties reach €35M or 7% of global turnover — and enterprise procurement already asks the record-keeping question in every AI deal, ahead of any regulator.</p>
+  </div>
+</section>
+
+<section class="clause" id="inquiries">
+  <div class="sheet">
+    <span class="no">§ 7</span>
+    <h2>Inquiries on record</h2>
+    <details><summary><span class="q">INQ-01</span>What exactly is a "flight"?<span class="mark" aria-hidden="true"></span></summary><p>One work session of your agent, start to finish — one refund handled, one claim processed. The name comes from aviation's recorder, which documents one flight the same way. Replay shows that sequence step by step.</p></details>
+    <details><summary><span class="q">INQ-02</span>Will it slow down or change our agent?<span class="mark" aria-hidden="true"></span></summary><p>No. The adapter relays every message untouched and seals copies out-of-band — microseconds per event. A recorder that altered behavior could not be trusted as evidence; transparency is a design invariant.</p></details>
+    <details><summary><span class="q">INQ-03</span>We already log everything. Why is that not enough?<span class="mark" aria-hidden="true"></span></summary><p>Logs prove what your database says now — not that nobody changed it. A chained, signed record makes any later alteration mathematically detectable. That is the difference between a log and evidence.</p></details>
+    <details><summary><span class="q">INQ-04</span>What about other AIs interacting with ours?<span class="mark" aria-hidden="true"></span></summary><p>Everything crossing your wrapped connections is recorded — including what outside agents asked yours to do. What other companies' AIs do on their own systems is their liability and their recorder's job, exactly like dashcams in traffic.</p></details>
+    <details><summary><span class="q">INQ-05</span>How is this different from monitoring platforms like Vorlon?<span class="mark" aria-hidden="true"></span></summary><p>Monitoring platforms watch telemetry and alert your security team — records that live in a vendor's database, taken on trust. Protokoll produces evidence in your custody that anyone can verify independently, forever. The alarm system and the notary: enterprises will want both, but only one testifies.</p></details>
+    <details><summary><span class="q">INQ-06</span>Are we locked in?<span class="mark" aria-hidden="true"></span></summary><p>No. The trace format (ATF) is an open, royalty-free specification; anyone can verify a recording independently. Your evidence outlives every vendor — including us.</p></details>
+    <details><summary><span class="q">INQ-07</span>What does it cost?<span class="mark" aria-hidden="true"></span></summary><p>Pilots run €200–500 per recorded agent per month. Five design-partner slots are open now: free through the pilot, locked pricing after, direct influence on the roadmap.</p></details>
+  </div>
+</section>
+
+<section class="clause">
+  <div class="sheet">
+    <span class="no">§ 8</span>
+    <h2>Resolution: five design-partner slots</h2>
+    <p class="lead">If you build or deploy AI agents in a regulated workflow — finance, insurance, healthcare, hiring, legal — the record-keeping question is already in your next enterprise deal. Thirty minutes to your first sealed recording.</p>
+    <div class="cta-row">
+      <a class="btn fill" href="mailto:juliandegen4@gmail.com?subject=Protokoll%20design%20partner">Claim a design-partner slot</a>
+      <a class="btn" href="replay.html">Watch the demo first</a>
+    </div>
+    <div class="sig">
+      <div class="sigline">
+        <span class="lbl">Recorded and signed</span><br>
+        <span class="typed">gez. Julian Degen — Germany, 2026</span>
       </div>
-    </div>
-  </div>
-</section>
-
-<section id="evidence">
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 04</b>Evidence design</div>
-    <div>
-      <h2>Built like a flight recorder, not a log file</h2>
-      <div class="row"><span class="k">Chained</span><span class="v"><span class="etag">Seal</span>Every entry is cryptographically locked to the one before it. Edit, delete, insert, or reorder anything — the chain breaks visibly at that exact point.</span></div>
-      <div class="row"><span class="k">Signed</span><span class="v"><span class="etag">Ed25519</span>The record is signed. A forger without the key cannot re-seal the file: the recording is attributable, not merely intact.</span></div>
-      <div class="row"><span class="k">Crash-proof</span><span class="v"><span class="etag">Checkpoint</span>The recorder seals checkpoints as it runs. If the machine dies mid-flight, everything up to the last checkpoint remains provable.</span></div>
-      <div class="row"><span class="k">Open format</span><span class="v"><span class="etag">ATF</span>Traces use an open, royalty-free format; verification is ~100 lines of standard cryptography anyone can implement. Evidence only we could read would be worthless to you.</span></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 05</b>Coverage boundary</div>
-    <div>
-      <h2>What we don't record — stated for the record</h2>
-      <div class="row"><span class="k">Unwrapped doors</span><span class="v">Each tool connection you wrap is covered; a door without a camera isn't filmed. Wrapping every connection takes seconds apiece.</span></div>
-      <div class="row"><span class="k">Other parties</span><span class="v">We record <b>your side</b> of every interaction — what your agent did and was asked. Like dashcams, each party carries its own recorder; you prove your own conduct, which is what you're liable for.</span></div>
-      <div class="row"><span class="k">Recording time</span><span class="v">We prove the record wasn't altered <b>afterwards</b> — not that the machine was uncompromised while recording. The full threat model ships with the product, in writing.</span></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 06</b>Regulatory clock</div>
-    <div>
-      <p class="clock">02·08·2026</p>
-      <p class="lead">EU AI Act record-keeping obligations for high-risk AI systems apply. Penalties reach <b>€35M or 7% of global turnover</b> — and enterprise procurement is already asking the record-keeping question in every AI deal, ahead of any regulator.</p>
-    </div>
-  </div>
-</section>
-
-<section id="inquiries">
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 07</b>Inquiries</div>
-    <div>
-      <h2>Questions buyers actually ask</h2>
-      <details><summary><span class="q">INQ-01</span>What exactly is a "flight"?</summary><p>One work session of your agent, start to finish — one refund handled, one claim processed. The name comes from aviation's recorder, which documents one flight the same way. Replay shows that sequence step by step.</p></details>
-      <details><summary><span class="q">INQ-02</span>Will it slow down or change our agent?</summary><p>No. The adapter relays every message untouched and seals copies out-of-band — microseconds per event. Transparency is a design invariant: a recorder that altered behavior couldn't be trusted as evidence.</p></details>
-      <details><summary><span class="q">INQ-03</span>We already log everything. Why isn't that enough?</summary><p>Logs prove what your database says now — not that nobody changed it. A chained, signed record makes any later alteration mathematically detectable. That is the difference between a log and evidence.</p></details>
-      <details><summary><span class="q">INQ-04</span>What about other AIs interacting with ours?</summary><p>Everything crossing your wrapped connections is recorded — including what outside agents asked yours to do. What other companies' AIs do on their own systems is their liability and their recorder's job, exactly like dashcams in traffic.</p></details>
-      <details><summary><span class="q">INQ-05</span>Are we locked in?</summary><p>No. The trace format (ATF) is an open, royalty-free specification; anyone can verify a recording independently, forever. Your evidence outlives every vendor — including us.</p></details>
-      <details><summary><span class="q">INQ-06</span>What does it cost?</summary><p>Pilots run €200–500 per recorded agent per month. Five design-partner slots are open now: free through the pilot, locked pricing after, direct influence on the roadmap.</p></details>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap sec">
-    <div class="sec-label"><b>Section 08</b>Design partners</div>
-    <div>
-      <h2>Five slots. Thirty minutes to your first sealed recording.</h2>
-      <p class="lead">If you build or deploy AI agents in a regulated workflow — finance, insurance, healthcare, hiring, legal — the record-keeping question is already in your next enterprise deal. Answer it before your competitors do.</p>
-      <div class="cta-row">
-        <a class="btn primary" href="mailto:juliandegen4@gmail.com?subject=BLACKBOX%20design%20partner">Claim a design-partner slot</a>
-        <a class="btn" href="replay.html">Watch the demo first</a>
-      </div>
+      <svg class="seal" width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Seal: Protokoll, tamper-evident, verified">
+        <circle cx="75" cy="75" r="70" fill="none" stroke="#000" stroke-width="3"/>
+        <circle cx="75" cy="75" r="52" fill="none" stroke="#000" stroke-width="1.5"/>
+        <path id="sealtext" d="M 75 14 A 61 61 0 1 1 74.9 14" fill="none"/>
+        <text font-family="Courier New, monospace" font-size="12.5" font-weight="bold" letter-spacing="3">
+          <textPath href="#sealtext">PROTOKOLL · TAMPER-EVIDENT · VERIFIED ·</textPath>
+        </text>
+        <text x="75" y="82" text-anchor="middle" font-family="Courier New, monospace" font-weight="bold" font-size="20">ATF</text>
+      </svg>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="wrap">
-    <span><b>BLACKBOX</b> (working title) · Julian Degen · Germany</span>
+  <div class="sheet">
+    <span><b>PROTOKOLL</b> · Julian Degen · Germany</span>
     <span><a href="mailto:juliandegen4@gmail.com">juliandegen4@gmail.com</a></span>
-    <span>ATF — open trace format · every claim on this page is testable in the live replay</span>
+    <span>every claim on this sheet is testable in Exhibit A</span>
   </div>
 </footer>
 
